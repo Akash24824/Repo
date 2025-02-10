@@ -1,0 +1,95 @@
+# Repo
+With highest demand
+class BPlusTreeNode:
+    def __init__(self, order, leaf=False):
+        self.order = order
+        self.leaf = leaf
+        self.keys = []  # Stores keys in sorted order
+        self.children = []  # Pointers to children (or values if leaf node)
+
+class BPlusTree:
+    def __init__(self, order=3):
+        if order < 2:
+            raise ValueError("Order must be at least 2.")
+        self.order = order
+        self.root = BPlusTreeNode(order, leaf=True)
+
+    def search(self, key):
+        node = self.root
+        while not node.leaf:
+            i = 0
+            while i < len(node.keys) and key >= node.keys[i]:
+                i += 1
+            node = node.children[i]
+        
+        for i, k in enumerate(node.keys):
+            if k == key:
+                return node.children[i]
+        return None
+
+    def insert(self, key, value):
+        root = self.root
+        if len(root.keys) == self.order - 1:
+            new_root = BPlusTreeNode(self.order)
+            new_root.children.append(self.root)
+            self._split_child(new_root, 0)
+            self.root = new_root
+        self._insert_non_full(self.root, key, value)
+
+    def _insert_non_full(self, node, key, value):
+        if node.leaf:
+            i = 0
+            while i < len(node.keys) and key > node.keys[i]:
+                i += 1
+            node.keys.insert(i, key)
+            node.children.insert(i, value)
+        else:
+            i = 0
+            while i < len(node.keys) and key >= node.keys[i]:
+                i += 1
+            if len(node.children[i].keys) == self.order - 1:
+                self._split_child(node, i)
+                if key >= node.keys[i]:
+                    i += 1
+            self._insert_non_full(node.children[i], key, value)
+
+    def _split_child(self, parent, index):
+        order = self.order
+        child = parent.children[index]
+        new_child = BPlusTreeNode(order, leaf=child.leaf)
+        mid_index = (order - 1) // 2
+        
+        parent.keys.insert(index, child.keys[mid_index])
+        parent.children.insert(index + 1, new_child)
+        
+        new_child.keys = child.keys[mid_index + 1:]
+        child.keys = child.keys[:mid_index]
+        
+        if child.leaf:
+            new_child.children = child.children[mid_index + 1:]
+            child.children = child.children[:mid_index + 1]
+            new_child.children.append(child.children[-1])
+            child.children[-1] = new_child
+        else:
+            new_child.children = child.children[mid_index + 1:]
+            child.children = child.children[:mid_index + 1]
+
+    def delete(self, key):
+        # To be implemented: Handle key deletion, node merging, and redistribution
+        pass
+    
+    def range_search(self, start_key, end_key):
+        # To be implemented: Efficient range search across leaf nodes
+        pass
+    
+    def minimum(self):
+        node = self.root
+        while not node.leaf:
+            node = node.children[0]
+        return (node.keys[0], node.children[0]) if node.keys else None
+    
+    def maximum(self):
+        node = self.root
+        while not node.leaf:
+            node = node.children[-1]
+        return (node.keys[-1], node.children[-1]) if node.keys else None
